@@ -19,9 +19,6 @@ int severityToPriority(EventSeverity severity) {
 
     case EventSeverity::Error:
         return ANDROID_LOG_ERROR;
-
-    default:
-        return ANDROID_LOG_VERBOSE;
     }
 }
 

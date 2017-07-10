@@ -1,37 +1,23 @@
 #include "native_map_view.hpp"
 
-#include <cstdlib>
-#include <ctime>
-#include <cassert>
-#include <memory>
 #include <list>
-#include <tuple>
 
 #include <sys/system_properties.h>
 
-#include <EGL/egl.h>
 #include <android/native_window_jni.h>
 
-#include <jni/jni.hpp>
-
 #include <mbgl/map/backend_scope.hpp>
-#include <mbgl/math/minmax.hpp>
-#include <mbgl/util/constants.hpp>
 #include <mbgl/util/event.hpp>
 #include <mbgl/util/exception.hpp>
-#include <mbgl/util/geo.hpp>
-#include <mbgl/util/image.hpp>
 #include <mbgl/util/shared_thread_pool.hpp>
 #include <mbgl/util/logging.hpp>
 #include <mbgl/util/platform.hpp>
 #include <mbgl/util/projection.hpp>
 #include <mbgl/style/style.hpp>
 #include <mbgl/style/image.hpp>
-#include <mbgl/style/filter.hpp>
 
 // Java -> C++ conversion
 #include "style/android_conversion.hpp"
-#include <mbgl/style/conversion.hpp>
 #include <mbgl/style/conversion/filter.hpp>
 
 // C++ -> Java conversion
@@ -44,10 +30,6 @@
 #include "attach_env.hpp"
 #include "bitmap.hpp"
 #include "run_loop_impl.hpp"
-#include "java/util.hpp"
-#include "geometry/lat_lng_bounds.hpp"
-#include "map/camera_position.hpp"
-#include "style/light.hpp"
 
 namespace mbgl {
 namespace android {
@@ -73,6 +55,9 @@ NativeMapView::NativeMapView(jni::JNIEnv& _env,
         pixelRatio, mbgl::android::FileSource::getDefaultFileSource(_env, jFileSource), *threadPool,
         MapMode::Continuous, GLContextMode::Unique, ConstrainMode::HeightOnly,
         ViewportMode::Default, jni::Make<std::string>(_env, _programCacheDir));
+
+    _initializeDisplay();
+    _initializeContext();
 }
 
 /**
@@ -247,22 +232,6 @@ void NativeMapView::onSourceChanged(mbgl::style::Source&) {
 }
 
 // JNI Methods //
-
-void NativeMapView::initializeDisplay(jni::JNIEnv&) {
-    _initializeDisplay();
-}
-
-void NativeMapView::terminateDisplay(jni::JNIEnv&) {
-    _terminateDisplay();
-}
-
-void NativeMapView::initializeContext(jni::JNIEnv&) {
-    _initializeContext();
-}
-
-void NativeMapView::terminateContext(jni::JNIEnv&) {
-    _terminateContext();
-}
 
 void NativeMapView::createSurface(jni::JNIEnv& env, jni::Object<> _surface) {
     _createSurface(ANativeWindow_fromSurface(&env, jni::Unwrap(*_surface)));
@@ -1460,10 +1429,6 @@ void NativeMapView::registerNative(jni::JNIEnv& env) {
             METHOD(&NativeMapView::update, "nativeUpdate"),
             METHOD(&NativeMapView::resizeView, "nativeResizeView"),
             METHOD(&NativeMapView::resizeFramebuffer, "nativeResizeFramebuffer"),
-            METHOD(&NativeMapView::initializeDisplay, "nativeInitializeDisplay"),
-            METHOD(&NativeMapView::terminateDisplay, "nativeTerminateDisplay"),
-            METHOD(&NativeMapView::initializeContext, "nativeInitializeContext"),
-            METHOD(&NativeMapView::terminateContext, "nativeTerminateContext"),
             METHOD(&NativeMapView::createSurface, "nativeCreateSurface"),
             METHOD(&NativeMapView::destroySurface, "nativeDestroySurface"),
             METHOD(&NativeMapView::getStyleUrl, "nativeGetStyleUrl"),
