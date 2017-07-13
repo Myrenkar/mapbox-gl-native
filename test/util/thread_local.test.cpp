@@ -77,24 +77,27 @@ public:
         data.set(data_);
     }
 
+    ~TestThreadReclaim() {
+        data.set(nullptr);
+    }
+
 private:
     ThreadLocal<int> data;
 };
 
 } // namespace
 
-TEST(ThreadLocalStorage, AutoReclaim) {
+TEST(ThreadLocalStorage, ShouldNotTakeOwnership) {
     RunLoop loop;
 
-    auto data1 = new int;
-    auto data2 = new int;
+    auto data1 = std::make_unique<int>(10);
+    auto data2 = std::make_unique<int>(20);
 
-    auto thread1 = std::make_unique<Thread<TestThreadReclaim>>("Test", data1);
-    auto thread2 = std::make_unique<Thread<TestThreadReclaim>>("Test", data2);
+    auto thread1 = std::make_unique<Thread<TestThreadReclaim>>("Test", data1.get());
+    auto thread2 = std::make_unique<Thread<TestThreadReclaim>>("Test", data2.get());
 
+    // Will crash if ThreadLocal destroys
+    // the pointer it is managing.
     thread1.reset();
     thread2.reset();
-
-    // Should not leak, valgrind will
-    // let us know.
 }
